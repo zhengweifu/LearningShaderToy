@@ -1,6 +1,8 @@
 #define AA 8
 #define AA2 (AA * AA)
 
+//#include "../../InverseMatrix.glsl"
+
 struct SVertex3D
 {
     vec3 Position;
@@ -69,20 +71,20 @@ void CreateCube()
 
 void CreatePlane()
 {
-    GVectices[8].Position = vec3(-.5, 0., .5);
+    GVectices[8].Position = vec3(-2., 0., 2.);
     GVectices[8].Color = vec3(1., 0., 0.);
 
-    GVectices[9].Position = vec3(.5, 0., .5);
+    GVectices[9].Position = vec3(2., 0., 2.);
     GVectices[9].Color = vec3(0., 1., 0.);
 
-    GVectices[10].Position = vec3(.5, 1., .5);
+    GVectices[10].Position = vec3(2., 0., -2.);
     GVectices[10].Color = vec3(0., 0., 1.);
 
-    GVectices[11].Position = vec3(-.5, 1., .5);
-    GVectices[11].Color = vec3(1., 0., 1.);
+    GVectices[11].Position = vec3(-2., 0., -2.);
+    GVectices[11].Color = vec3(1.0, 0.0, 0.9843);
 
-    GIndices[36] = 8; GIndices[37] = 9; GIndices[38] = 10;
-    GIndices[39] = 8; GIndices[40] = 10; GIndices[41] = 11;
+    GIndices[36] = 8; GIndices[37] = 10; GIndices[38] = 9;
+    GIndices[39] = 8; GIndices[40] = 11; GIndices[41] = 10;
 }
 
 vec2 FixUV(in vec2 fragCrood)
@@ -150,12 +152,17 @@ mat4 MakePerspective()
     return re;
 }
 
-mat4 MakeCameraMatrix(vec3 Up, vec3 Eye, vec3 Target)
+vec3 UP = vec3(0., 1., 0.);
+mat4 MakeCameraMatrix(vec3 Eye, vec3 Target)
 {
+    vec3 Z = normalize(Eye - Target),
+        X = normalize(cross(UP, Z)),
+        Y = cross(Z, X);
+    
     return mat4(
-        1., 0., 0., 0.,
-        0., 1., 0., 0.,
-        0., 0., 1., 0.,
+        X.x, X.y, X.z, 0.,
+        Y.x, Y.y, Y.z, 0.,
+        Z.x, Z.y, Z.z, 0.,
         -Eye.x, -Eye.y, -Eye.z, 1. 
     );
 }
@@ -195,15 +202,15 @@ void Rasterizer(vec2 V1, vec2 V2, vec2 V3)
 
 vec3 Render(vec2 P)
 {
-    mat4 ProjectMatrix = MakeOrthographic(- 1000., 1000., 1000., -1000., .1, 1000.);
-    mat4 ViewMatrix = MakeCameraMatrix(vec3(0.), vec3(0., 0., -10.), vec3(0.));
+    mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5., -5., .1, 1000.);
+    mat4 ViewMatrix = MakeCameraMatrix(vec3(0., 1., 2.), vec3(0.));
     
     vec3 Col = vec3(0.);
 
     CreateCube();
     CreatePlane();
 
-    for(int i = 36; i < INDICES_COUNT; i += 3)
+    for(int i = 0; i < INDICES_COUNT; i += 3)
     {
         vec3 D;
         SVertex3D V1 = GVectices[GIndices[i]], V2 = GVectices[GIndices[i+1]], V3 = GVectices[GIndices[i+2]];
@@ -212,7 +219,7 @@ vec3 Render(vec2 P)
         VertexFromWorldToNDCSpace(MVP, V1, VV1);
         VertexFromWorldToNDCSpace(MVP, V2, VV2);
         VertexFromWorldToNDCSpace(MVP, V3, VV3);
-        bool bInside = InsideTriangle(P, V1.Position.xy, V2.Position.xy, V3.Position.xy, D);
+        bool bInside = InsideTriangle(P, VV1.Position.xy, VV2.Position.xy, VV3.Position.xy, D);
         if(bInside)
         {
             // reference: https://www.bilibili.com/video/BV1X7411F744?p=9 about 10 minutes
@@ -238,9 +245,6 @@ vec3 Render(vec2 P)
 void mainImage(out vec4 fragColor, in vec2 fragCrood)
 {
     vec2 UV = FixUV(fragCrood);
-    vec2 P1 = vec2(0.);
-    vec2 P2 = vec2(1., 0.);
-    vec2 P3 = vec2(.5, .5);
 
     vec3 Col = vec3(0.);
 
@@ -266,7 +270,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCrood)
     // Col = mix(GridColor, vec3(0.2941, 0.3961, 0.3098), Alpha);
 
     vec2 NDC_UV = fragCrood / iResolution.xy * 2. - 1.;
-    Col = Render(NDC_UV);
+    Col = Render(UV);
 
     fragColor = vec4(Col, 1.0);
 }
