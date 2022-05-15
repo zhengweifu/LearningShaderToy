@@ -24,25 +24,25 @@ void CreateCube()
     GVectices[0].Color = vec3(1., 0., 0.);
 
     GVectices[1].Position = vec3(.5, 0., .5);
-    GVectices[0].Color = vec3(0., 1., 0.);
+    GVectices[1].Color = vec3(0., 1., 0.);
 
     GVectices[2].Position = vec3(.5, 1., .5);
-    GVectices[0].Color = vec3(0., 0., 1.);
+    GVectices[2].Color = vec3(0., 0., 1.);
 
     GVectices[3].Position = vec3(-.5, 1., .5);
-    GVectices[0].Color = vec3(1., 0., 1.);
+    GVectices[3].Color = vec3(1., 0., 1.);
 
     GVectices[4].Position = vec3(-.5, 0., -.5);
-    GVectices[0].Color = vec3(1., 0., 0.);
+    GVectices[4].Color = vec3(1., 0., 0.);
 
     GVectices[5].Position = vec3(.5, 0., -.5);
-    GVectices[0].Color = vec3(0., 1., 0.);
+    GVectices[5].Color = vec3(0., 1., 0.);
 
     GVectices[6].Position = vec3(.5, 1., -.5);
-    GVectices[0].Color = vec3(0., 0., 1.);
+    GVectices[6].Color = vec3(0., 0., 1.);
 
     GVectices[7].Position = vec3(-.5, 1., -.5);
-    GVectices[0].Color = vec3(1., 0., 1.);
+    GVectices[7].Color = vec3(1., 0., 1.);
 
     // front
     GIndices[0] = 0; GIndices[1] = 1; GIndices[2] = 2;
@@ -83,8 +83,8 @@ void CreatePlane()
     GVectices[11].Position = vec3(-2., 0., -2.);
     GVectices[11].Color = vec3(1.0, 0.0, 0.9843);
 
-    GIndices[36] = 8; GIndices[37] = 10; GIndices[38] = 9;
-    GIndices[39] = 8; GIndices[40] = 11; GIndices[41] = 10;
+    GIndices[36] = 8; GIndices[37] = 9; GIndices[38] = 10;
+    GIndices[39] = 8; GIndices[40] = 10; GIndices[41] = 11;
 }
 
 vec2 FixUV(in vec2 fragCrood)
@@ -132,11 +132,11 @@ mat4 IdentityMatrix4()
 
 mat4 MakeOrthographic(float Left, float Right, float Top, float Bottom, float Near, float Far)
 {
-    vec3 Scale = vec3(2. / (Right - Left), 2. / (Top - Bottom), 2. / (Far - Near));
+    vec3 Scale = vec3(2. / (Right - Left), 2. / (Top - Bottom), 2. / (-Far + Near));
     vec3 Move = vec3(
         -(Right + Left) / (Right - Left), 
         -(Top + Bottom) / (Top - Bottom),
-        -(Near + Far) / (Far - Near));
+        -(Near + Far) / (-Far + Near));
     
     return mat4(
         Scale.x, 0.,      0.,      0.,
@@ -160,10 +160,10 @@ mat4 MakeCameraMatrix(vec3 Eye, vec3 Target)
         Y = cross(Z, X);
     
     return mat4(
-        X.x, X.y, X.z, 0.,
-        Y.x, Y.y, Y.z, 0.,
-        Z.x, Z.y, Z.z, 0.,
-        -Eye.x, -Eye.y, -Eye.z, 1. 
+           X.x,    Y.x,    Z.x, 0.,
+           X.y,    Y.y,    Z.y, 0.,
+           X.z,    Y.z,    Z.z, 0.,
+        -dot(X, Eye), -dot(Y, Eye), -dot(Z, Eye), 1. 
     );
 }
 
@@ -171,8 +171,8 @@ void VertexFromWorldToNDCSpace(mat4 MVP, in SVertex3D InVertex, out SVertex3D Ou
 {
     vec4 Position = MVP * vec4(InVertex.Position, 1.0);
     vec4 Normal = MVP * vec4(InVertex.Normal, 1.0);
-    OutVertex.Position = Position.xyz / Position.w;
-    OutVertex.Normal = Normal.xyz / Position.w;
+    OutVertex.Position = Position.xyz;// / Position.w;
+    OutVertex.Normal = Normal.xyz;/// Position.w;
     OutVertex.Color = InVertex.Color;
     OutVertex.UV = InVertex.UV;
 }
@@ -200,16 +200,16 @@ void Rasterizer(vec2 V1, vec2 V2, vec2 V3)
 
 
 
-vec3 Render(vec2 P)
+vec4 Render(vec2 P)
 {
     mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5., -5., .1, 1000.);
-    mat4 ViewMatrix = MakeCameraMatrix(vec3(0., 1., 2.), vec3(0.));
+    mat4 ViewMatrix = MakeCameraMatrix(vec3(2.,2., 2.), vec3(0.));
     
-    vec3 Col = vec3(0.);
+    vec4 Col = vec4(0.);
 
     CreateCube();
     CreatePlane();
-
+    float Depth = 99999999.;
     for(int i = 0; i < INDICES_COUNT; i += 3)
     {
         vec3 D;
@@ -219,6 +219,10 @@ vec3 Render(vec2 P)
         VertexFromWorldToNDCSpace(MVP, V1, VV1);
         VertexFromWorldToNDCSpace(MVP, V2, VV2);
         VertexFromWorldToNDCSpace(MVP, V3, VV3);
+        bool bRenderVV1 = VV1.Position.z <= 1. && VV1.Position.z >= -1.;
+        bool bRenderVV2 = VV2.Position.z <= 1. && VV2.Position.z >= -1.;
+        bool bRenderVV3 = VV3.Position.z <= 1. && VV3.Position.z >= -1.;
+        //if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
         bool bInside = InsideTriangle(P, VV1.Position.xy, VV2.Position.xy, VV3.Position.xy, D);
         if(bInside)
         {
@@ -232,10 +236,18 @@ vec3 Render(vec2 P)
             // P(x, y) = a * P1 + b * P2 + c * P3
             // α + β + γ = 1 (a >= 0 && b >= 0 && c >= 0)
             vec3 AlphaBetaGamma = D.yzx / (D.x + D.y + D.z);
-            Col = AlphaBetaGamma.x * V1.Color 
+            float CDepth = AlphaBetaGamma.x * VV1.Position.z
+                + AlphaBetaGamma.y * VV2.Position.z
+                + AlphaBetaGamma.z * VV3.Position.z;
+            
+            if(CDepth >= Depth) continue;
+            Depth = CDepth;
+
+            vec3 C = AlphaBetaGamma.x * V1.Color 
                 + AlphaBetaGamma.y * V2.Color 
                 + AlphaBetaGamma.z * V3.Color;
-            
+
+            Col.rgb = C; Col.a = 1.;
         }
     }
 
@@ -246,31 +258,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCrood)
 {
     vec2 UV = FixUV(fragCrood);
 
-    vec3 Col = vec3(0.);
+    // anti-aliasing
+    vec4 Col = vec4(0.);
+    for (int S = 0; S < AA; S++)
+    {
+        for (int T = 0; T < AA; T++)
+        {
+            vec2 Offset = vec2(2. * vec2(float(S), float(T)) / float(AA) - 1.);
+            Col += Render(FixUV(fragCrood + Offset));
+        }
+    }
 
-    // // anti-aliasing
-    // float Alpha = 0.;
-    // for (int S = 0; S < AA; S++)
-    // {
-    //     for (int T = 0; T < AA; T++)
-    //     {
-    //         vec2 Offset = vec2(2. * vec2(float(S), float(T)) / float(AA) - 1.);
-    //         vec3 D;
-    //         if(InsideTriangle(FixUV(fragCrood + Offset), P1, P2, P3, D))
-    //         {
-    //             Alpha += 1.;
-    //         }
-    //     }
-    // }
+    Col /= float(AA2);
 
-    // Alpha /= float(AA2);
-
-    // vec3 GridColor = Grid(UV, 5);
+    vec3 GridColor = Grid(UV, 5);
     
-    // Col = mix(GridColor, vec3(0.2941, 0.3961, 0.3098), Alpha);
+    vec3 Color = mix(GridColor, Col.rgb, Col.a);
 
-    vec2 NDC_UV = fragCrood / iResolution.xy * 2. - 1.;
-    Col = Render(UV);
-
-    fragColor = vec4(Col, 1.0);
+    fragColor = vec4(Color, 1.0);
 }
