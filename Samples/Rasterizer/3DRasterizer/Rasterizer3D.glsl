@@ -1,7 +1,9 @@
 #define AA 8
 #define AA2 (AA * AA)
+#define PI 3.14156
 
 //#include "../../InverseMatrix.glsl"
+#iChannel0 "../../../Assets/Textures/Abstract1.jpg"
 
 struct SVertex3D
 {
@@ -73,15 +75,19 @@ void CreatePlane()
 {
     GVectices[8].Position = vec3(-2., 0., 2.);
     GVectices[8].Color = vec3(1., 0., 0.);
+    GVectices[8].UV = vec2(0.);
 
     GVectices[9].Position = vec3(2., 0., 2.);
     GVectices[9].Color = vec3(0., 1., 0.);
+    GVectices[9].UV = vec2(1., 0.);
 
     GVectices[10].Position = vec3(2., 0., -2.);
     GVectices[10].Color = vec3(0., 0., 1.);
+    GVectices[10].UV = vec2(1.);
 
     GVectices[11].Position = vec3(-2., 0., -2.);
     GVectices[11].Color = vec3(1.0, 0.0, 0.9843);
+    GVectices[11].UV = vec2(0., 1.);
 
     GIndices[36] = 8; GIndices[37] = 9; GIndices[38] = 10;
     GIndices[39] = 8; GIndices[40] = 10; GIndices[41] = 11;
@@ -90,6 +96,11 @@ void CreatePlane()
 vec2 FixUV(in vec2 fragCrood)
 {
     return (2. * fragCrood - iResolution.xy) / min(iResolution.x, iResolution.y);
+}
+
+vec2 FixUV2(in vec2 fragCrood)
+{
+    return fragCrood / iResolution.xy * 2.0 - 1.0;
 }
 
 // Create a grid
@@ -146,14 +157,30 @@ mat4 MakeOrthographic(float Left, float Right, float Top, float Bottom, float Ne
     );
 }
 
-mat4 MakePerspective()
+// reference https://www.bilibili.com/video/BV1X7411F744?p=4 about 51 minutes
+// https://zhuanlan.zhihu.com/p/144329075
+// https://zhuanlan.zhihu.com/p/144331875
+mat4 MakePerspective(float Fov, float Aspect, float Near, float Far)
 {
-    mat4 re;
-    return re;
+    float Top = Near * tan(Fov * PI / 360.);
+    float Right = Aspect * Top;
+    float Bottom = -Top;
+    float Left = - Right;
+
+    mat4 MPersp2Ortho = mat4(
+        -Near, 0.,   0.,         0.,
+        0.,   -Near, 0.,         0.,
+        0.,   0.,   Near + Far, 1.,
+        0.,   0.,  -Far * Near, 0.
+    );
+
+    mat4 MOrtho = MakeOrthographic(Left, Right, Top, Bottom, Near, Far);
+
+    return MOrtho * MPersp2Ortho;
 }
 
 vec3 UP = vec3(0., 1., 0.);
-mat4 MakeCameraMatrix(vec3 Eye, vec3 Target)
+mat4 MakeCameraInverseMatrix(vec3 Eye, vec3 Target)
 {
     vec3 Z = normalize(Eye - Target),
         X = normalize(cross(UP, Z)),
@@ -171,7 +198,7 @@ void VertexFromWorldToNDCSpace(mat4 MVP, in SVertex3D InVertex, out SVertex3D Ou
 {
     vec4 Position = MVP * vec4(InVertex.Position, 1.0);
     vec4 Normal = MVP * vec4(InVertex.Normal, 1.0);
-    OutVertex.Position = Position.xyz;// / Position.w;
+    OutVertex.Position = Position.xyz / Position.w;
     OutVertex.Normal = Normal.xyz;/// Position.w;
     OutVertex.Color = InVertex.Color;
     OutVertex.UV = InVertex.UV;
@@ -202,14 +229,17 @@ void Rasterizer(vec2 V1, vec2 V2, vec2 V3)
 
 vec4 Render(vec2 P)
 {
-    mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5., -5., .1, 1000.);
-    mat4 ViewMatrix = MakeCameraMatrix(vec3(2.,2., 2.), vec3(0.));
-    
+    float Aspect = iResolution.x / iResolution.y;
+    P.x /= Aspect;
+    mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5./ Aspect, -5./ Aspect, .1, 1000.);
+    mat4 ViewMatrix = MakeCameraInverseMatrix(vec3(0.,3., 6.), vec3(0.));
+    ProjectMatrix = MakePerspective(53., Aspect, .1, 100.);
+
     vec4 Col = vec4(0.);
 
     CreateCube();
     CreatePlane();
-    float Depth = 99999999.;
+    float Depth = 99999999.; 
     for(int i = 0; i < INDICES_COUNT; i += 3)
     {
         vec3 D;
@@ -246,6 +276,14 @@ vec4 Render(vec2 P)
             vec3 C = AlphaBetaGamma.x * V1.Color 
                 + AlphaBetaGamma.y * V2.Color 
                 + AlphaBetaGamma.z * V3.Color;
+
+            if(i >= 36)
+            {
+                vec2 UV = AlphaBetaGamma.x * V1.UV 
+                + AlphaBetaGamma.y * V2.UV 
+                + AlphaBetaGamma.z * V3.UV;
+                C = texture(iChannel0, UV).xyz;
+            }
 
             Col.rgb = C; Col.a = 1.;
         }
