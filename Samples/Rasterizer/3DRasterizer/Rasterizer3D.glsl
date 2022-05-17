@@ -3,9 +3,9 @@
 #define PI 3.14156
 
 //#include "../../InverseMatrix.glsl"
-#iChannel0 "../../../Assets/Textures/Abstract1.jpg"
-
-struct SVertex3D
+#iChannel0 "../../../Assets/Textures/Checker.jpg"
+#iChannel1 "../../../Assets/Textures/Girl.jpg"
+struct SPoint
 {
     vec3 Position;
     vec3 Normal;
@@ -17,34 +17,34 @@ struct SVertex3D
 #define VECTICES_COUNT 12
 #define INDICES_COUNT 42
 
-SVertex3D GVectices[VECTICES_COUNT];
+SPoint GPoints[VECTICES_COUNT];
 int GIndices[INDICES_COUNT];
 
 void CreateCube()
 {
-    GVectices[0].Position = vec3(-.5, 0., .5);
-    GVectices[0].Color = vec3(1., 0., 0.);
+    GPoints[0].Position = vec3(-.5, 0., .5);
+    GPoints[0].Color = vec3(1., 0., 0.);
 
-    GVectices[1].Position = vec3(.5, 0., .5);
-    GVectices[1].Color = vec3(0., 1., 0.);
+    GPoints[1].Position = vec3(.5, 0., .5);
+    GPoints[1].Color = vec3(0., 1., 0.);
 
-    GVectices[2].Position = vec3(.5, 1., .5);
-    GVectices[2].Color = vec3(0., 0., 1.);
+    GPoints[2].Position = vec3(.5, 1., .5);
+    GPoints[2].Color = vec3(0., 0., 1.);
 
-    GVectices[3].Position = vec3(-.5, 1., .5);
-    GVectices[3].Color = vec3(1., 0., 1.);
+    GPoints[3].Position = vec3(-.5, 1., .5);
+    GPoints[3].Color = vec3(1., 0., 1.);
 
-    GVectices[4].Position = vec3(-.5, 0., -.5);
-    GVectices[4].Color = vec3(1., 0., 0.);
+    GPoints[4].Position = vec3(-.5, 0., -.5);
+    GPoints[4].Color = vec3(1., 0., 0.);
 
-    GVectices[5].Position = vec3(.5, 0., -.5);
-    GVectices[5].Color = vec3(0., 1., 0.);
+    GPoints[5].Position = vec3(.5, 0., -.5);
+    GPoints[5].Color = vec3(0., 1., 0.);
 
-    GVectices[6].Position = vec3(.5, 1., -.5);
-    GVectices[6].Color = vec3(0., 0., 1.);
+    GPoints[6].Position = vec3(.5, 1., -.5);
+    GPoints[6].Color = vec3(0., 0., 1.);
 
-    GVectices[7].Position = vec3(-.5, 1., -.5);
-    GVectices[7].Color = vec3(1., 0., 1.);
+    GPoints[7].Position = vec3(-.5, 1., -.5);
+    GPoints[7].Color = vec3(1., 0., 1.);
 
     // front
     GIndices[0] = 0; GIndices[1] = 1; GIndices[2] = 2;
@@ -73,21 +73,21 @@ void CreateCube()
 
 void CreatePlane()
 {
-    GVectices[8].Position = vec3(-2., 0., 2.);
-    GVectices[8].Color = vec3(1., 0., 0.);
-    GVectices[8].UV = vec2(0.);
+    GPoints[8].Position = vec3(-2., 0., 2.);
+    GPoints[8].Color = vec3(1., 0., 0.);
+    GPoints[8].UV = vec2(0.);
 
-    GVectices[9].Position = vec3(2., 0., 2.);
-    GVectices[9].Color = vec3(0., 1., 0.);
-    GVectices[9].UV = vec2(1., 0.);
+    GPoints[9].Position = vec3(2., 0., 2.);
+    GPoints[9].Color = vec3(0., 1., 0.);
+    GPoints[9].UV = vec2(1., 0.);
 
-    GVectices[10].Position = vec3(2., 0., -2.);
-    GVectices[10].Color = vec3(0., 0., 1.);
-    GVectices[10].UV = vec2(1.);
+    GPoints[10].Position = vec3(2., 0., -2.);
+    GPoints[10].Color = vec3(0., 0., 1.);
+    GPoints[10].UV = vec2(1.);
 
-    GVectices[11].Position = vec3(-2., 0., -2.);
-    GVectices[11].Color = vec3(1.0, 0.0, 0.9843);
-    GVectices[11].UV = vec2(0., 1.);
+    GPoints[11].Position = vec3(-2., 0., -2.);
+    GPoints[11].Color = vec3(1.0, 0.0, 0.9843);
+    GPoints[11].UV = vec2(0., 1.);
 
     GIndices[36] = 8; GIndices[37] = 9; GIndices[38] = 10;
     GIndices[39] = 8; GIndices[40] = 10; GIndices[41] = 11;
@@ -143,11 +143,11 @@ mat4 IdentityMatrix4()
 
 mat4 MakeOrthographic(float Left, float Right, float Top, float Bottom, float Near, float Far)
 {
-    vec3 Scale = vec3(2. / (Right - Left), 2. / (Top - Bottom), 2. / (-Far + Near));
+    vec3 Scale = vec3(2. / (Right - Left), 2. / (Top - Bottom), 2. / (Near - Far));
     vec3 Move = vec3(
         -(Right + Left) / (Right - Left), 
         -(Top + Bottom) / (Top - Bottom),
-        -(Near + Far) / (-Far + Near));
+        -(Near + Far) / (Near - Far));
     
     return mat4(
         Scale.x, 0.,      0.,      0.,
@@ -166,10 +166,10 @@ mat4 MakePerspective(float Fov, float Aspect, float Near, float Far)
     float Right = Aspect * Top;
     float Bottom = -Top;
     float Left = - Right;
-
+    
     mat4 MPersp2Ortho = mat4(
-        -Near, 0.,   0.,         0.,
-        0.,   -Near, 0.,         0.,
+        -Near, 0.,   0.,         0., // game101上面推导是Near,这取-Near是因为 w=z， 而z的一定是负数，后面做透视除法（x/w）后远处值被放大
+        0.,   -Near, 0.,         0.,// game101上面推导是Near,这取-Near是因为 w=z， 而z的一定是负数，后面做透视除法（y/w）后远处值被放大
         0.,   0.,   Near + Far, 1.,
         0.,   0.,  -Far * Near, 0.
     );
@@ -194,14 +194,15 @@ mat4 MakeCameraInverseMatrix(vec3 Eye, vec3 Target)
     );
 }
 
-void VertexFromWorldToNDCSpace(mat4 MVP, in SVertex3D InVertex, out SVertex3D OutVertex)
+void VertexFromWorldToNDCSpace(mat4 MVP, in SPoint InPoint, out SPoint OutPoint, out float W)
 {
-    vec4 Position = MVP * vec4(InVertex.Position, 1.0);
-    vec4 Normal = MVP * vec4(InVertex.Normal, 1.0);
-    OutVertex.Position = Position.xyz / Position.w;
-    OutVertex.Normal = Normal.xyz;/// Position.w;
-    OutVertex.Color = InVertex.Color;
-    OutVertex.UV = InVertex.UV;
+    vec4 Position = MVP * vec4(InPoint.Position, 1.0);
+    vec4 Normal = MVP * vec4(InPoint.Normal, 1.0);
+    W = Position.w;
+    OutPoint.Position = Position.xyz / W;
+    OutPoint.Normal = Normal.xyz;
+    OutPoint.Color = InPoint.Color;
+    OutPoint.UV = InPoint.UV;
 }
 
 
@@ -220,39 +221,52 @@ bool InsideTriangle(vec2 P, vec2 V1, vec2 V2, vec2 V3, out vec3 D)
     return false;
 }
 
-void Rasterizer(vec2 V1, vec2 V2, vec2 V3)
+// 计算相机空间的深度值
+float LinearDepth(float Depth, float Near, float Far)
 {
-    //vec3
+    float Z = Depth;// * 2. - 1.;
+    return (2. * Near * Far) / ((Far + Near) - Z * (Near - Far)); 
 }
 
-
+// reference https://zhuanlan.zhihu.com/p/403259571
+// reference https://zhuanlan.zhihu.com/p/512511648
+vec3 PerspectiveCorrection(vec3 AlphaBetaGamma, float Z1, float Z2, float Z3)
+{
+    float Alpha = AlphaBetaGamma.x / Z1;
+    float Beta = AlphaBetaGamma.y / Z2;
+    float Gamma = AlphaBetaGamma.z / Z3;
+    float Zn = 1. / ( Alpha + Beta + Gamma);
+    return Zn * vec3(Alpha, Beta, Gamma);
+}
 
 vec4 Render(vec2 P)
 {
+    const float Near= -.1, Far = -1000.; 
     float Aspect = iResolution.x / iResolution.y;
     P.x /= Aspect;
-    mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5./ Aspect, -5./ Aspect, .1, 1000.);
-    mat4 ViewMatrix = MakeCameraInverseMatrix(vec3(0.,3., 6.), vec3(0.));
-    ProjectMatrix = MakePerspective(53., Aspect, .1, 100.);
+    mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5./ Aspect, -5./ Aspect, Near, Far);
+    mat4 ViewMatrix = MakeCameraInverseMatrix(vec3(5.,5., 5.), vec3(0.));
+    ProjectMatrix = MakePerspective(53., Aspect, Near, Far);
 
     vec4 Col = vec4(0.);
 
     CreateCube();
     CreatePlane();
-    float Depth = 99999999.; 
+    float Depth = -99999999.; 
     for(int i = 0; i < INDICES_COUNT; i += 3)
     {
         vec3 D;
-        SVertex3D V1 = GVectices[GIndices[i]], V2 = GVectices[GIndices[i+1]], V3 = GVectices[GIndices[i+2]];
+        SPoint V1 = GPoints[GIndices[i]], V2 = GPoints[GIndices[i+1]], V3 = GPoints[GIndices[i+2]];
         mat4 MVP = ProjectMatrix * ViewMatrix;
-        SVertex3D VV1, VV2, VV3;
-        VertexFromWorldToNDCSpace(MVP, V1, VV1);
-        VertexFromWorldToNDCSpace(MVP, V2, VV2);
-        VertexFromWorldToNDCSpace(MVP, V3, VV3);
+        SPoint VV1, VV2, VV3;
+        float W1, W2, W3;
+        VertexFromWorldToNDCSpace(MVP, V1, VV1, W1);
+        VertexFromWorldToNDCSpace(MVP, V2, VV2, W2);
+        VertexFromWorldToNDCSpace(MVP, V3, VV3, W3);
         bool bRenderVV1 = VV1.Position.z <= 1. && VV1.Position.z >= -1.;
         bool bRenderVV2 = VV2.Position.z <= 1. && VV2.Position.z >= -1.;
         bool bRenderVV3 = VV3.Position.z <= 1. && VV3.Position.z >= -1.;
-        //if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
+        if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
         bool bInside = InsideTriangle(P, VV1.Position.xy, VV2.Position.xy, VV3.Position.xy, D);
         if(bInside)
         {
@@ -266,11 +280,18 @@ vec4 Render(vec2 P)
             // P(x, y) = a * P1 + b * P2 + c * P3
             // α + β + γ = 1 (a >= 0 && b >= 0 && c >= 0)
             vec3 AlphaBetaGamma = D.yzx / (D.x + D.y + D.z);
+
+            // Perspective correction
+            float Depth1 = LinearDepth(VV1.Position.z, Near, Far);
+            float Depth2 = LinearDepth(VV2.Position.z, Near, Far);
+            float Depth3 = LinearDepth(VV3.Position.z, Near, Far);
+            AlphaBetaGamma = PerspectiveCorrection(AlphaBetaGamma, Depth1, Depth2, Depth3);
+
             float CDepth = AlphaBetaGamma.x * VV1.Position.z
                 + AlphaBetaGamma.y * VV2.Position.z
                 + AlphaBetaGamma.z * VV3.Position.z;
             
-            if(CDepth >= Depth) continue;
+            if(CDepth < Depth) continue;
             Depth = CDepth;
 
             vec3 C = AlphaBetaGamma.x * V1.Color 
@@ -282,6 +303,7 @@ vec4 Render(vec2 P)
                 vec2 UV = AlphaBetaGamma.x * V1.UV 
                 + AlphaBetaGamma.y * V2.UV 
                 + AlphaBetaGamma.z * V3.UV;
+
                 C = texture(iChannel0, UV).xyz;
             }
 
@@ -294,7 +316,7 @@ vec4 Render(vec2 P)
 
 void mainImage(out vec4 fragColor, in vec2 fragCrood)
 {
-    vec2 UV = FixUV(fragCrood);
+    vec2 UV = FixUV2(fragCrood);
 
     // anti-aliasing
     vec4 Col = vec4(0.);

@@ -34,11 +34,21 @@ float Function(float x)
     return sin(2. * PI / t * x);
 }
 
+// 经过透视矩阵后的Z
+float FunctionPersZ(float z)
+{
+    float f = -1.;
+    float n = .1;
+    return ((f + n) * z - 2. * f * n) / ((n - f) * z);
+}
+
+
 float DrawFunction(vec2 uv, float w)
 {
-    float y = Function(uv.x);
+    float y = FunctionPersZ(uv.x);
     return smoothstep(y - w, y + w, uv.y);
 }
+
 
 #define AA 4
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
