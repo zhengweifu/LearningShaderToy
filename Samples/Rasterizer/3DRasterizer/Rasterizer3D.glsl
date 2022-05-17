@@ -1,4 +1,4 @@
-#define AA 8
+#define AA 4
 #define AA2 (AA * AA)
 #define PI 3.14156
 
@@ -202,7 +202,7 @@ void VertexFromWorldToNDCSpace(mat4 MVP, in SPoint InPoint, out SPoint OutPoint,
     OutPoint.Position = Position.xyz / W;
     OutPoint.Normal = Normal.xyz;
     OutPoint.Color = InPoint.Color;
-    OutPoint.UV = InPoint.UV;
+    OutPoint.UV = InPoint.UV / W;
 }
 
 
@@ -245,7 +245,8 @@ vec4 Render(vec2 P)
     float Aspect = iResolution.x / iResolution.y;
     P.x /= Aspect;
     mat4 ProjectMatrix = MakeOrthographic(- 5., 5., 5./ Aspect, -5./ Aspect, Near, Far);
-    mat4 ViewMatrix = MakeCameraInverseMatrix(vec3(5.,5., 5.), vec3(0.));
+    float Mov = (sin(iTime) + 1.)/2.;
+    mat4 ViewMatrix = MakeCameraInverseMatrix(vec3(5. * Mov, 5. * Mov, 5.), vec3(0.));
     ProjectMatrix = MakePerspective(53., Aspect, Near, Far);
 
     vec4 Col = vec4(0.);
@@ -266,7 +267,7 @@ vec4 Render(vec2 P)
         bool bRenderVV1 = VV1.Position.z <= 1. && VV1.Position.z >= -1.;
         bool bRenderVV2 = VV2.Position.z <= 1. && VV2.Position.z >= -1.;
         bool bRenderVV3 = VV3.Position.z <= 1. && VV3.Position.z >= -1.;
-        if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
+        //if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
         bool bInside = InsideTriangle(P, VV1.Position.xy, VV2.Position.xy, VV3.Position.xy, D);
         if(bInside)
         {
@@ -287,9 +288,9 @@ vec4 Render(vec2 P)
             float Depth3 = LinearDepth(VV3.Position.z, Near, Far);
             AlphaBetaGamma = PerspectiveCorrection(AlphaBetaGamma, Depth1, Depth2, Depth3);
 
-            float CDepth = AlphaBetaGamma.x * VV1.Position.z
-                + AlphaBetaGamma.y * VV2.Position.z
-                + AlphaBetaGamma.z * VV3.Position.z;
+            float CDepth = AlphaBetaGamma.x * Depth1
+                + AlphaBetaGamma.y * Depth2
+                + AlphaBetaGamma.z * Depth3;
             
             if(CDepth < Depth) continue;
             Depth = CDepth;
@@ -300,11 +301,11 @@ vec4 Render(vec2 P)
 
             if(i >= 36)
             {
-                vec2 UV = AlphaBetaGamma.x * V1.UV 
-                + AlphaBetaGamma.y * V2.UV 
+                vec2 UV = AlphaBetaGamma.x * V1.UV
+                + AlphaBetaGamma.y * V2.UV
                 + AlphaBetaGamma.z * V3.UV;
 
-                C = texture(iChannel0, UV).xyz;
+                C = texture(iChannel1, UV).xyz;
             }
 
             Col.rgb = C; Col.a = 1.;
@@ -331,7 +332,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCrood)
 
     Col /= float(AA2);
 
-    vec3 GridColor = Grid(UV, 5);
+    vec3 GridColor = vec3(0.3, 0.4, 0.5);//Grid(UV, 5);
     
     vec3 Color = mix(GridColor, Col.rgb, Col.a);
 
