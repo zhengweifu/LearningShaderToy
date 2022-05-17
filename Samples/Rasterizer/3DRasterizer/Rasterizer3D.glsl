@@ -267,7 +267,7 @@ vec4 Render(vec2 P)
         bool bRenderVV1 = VV1.Position.z <= 1. && VV1.Position.z >= -1.;
         bool bRenderVV2 = VV2.Position.z <= 1. && VV2.Position.z >= -1.;
         bool bRenderVV3 = VV3.Position.z <= 1. && VV3.Position.z >= -1.;
-        //if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
+        if(!bRenderVV1 && !bRenderVV2 && !bRenderVV3) continue;
         bool bInside = InsideTriangle(P, VV1.Position.xy, VV2.Position.xy, VV3.Position.xy, D);
         if(bInside)
         {
