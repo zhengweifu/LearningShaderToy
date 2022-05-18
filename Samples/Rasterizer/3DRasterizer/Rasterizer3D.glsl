@@ -1,17 +1,11 @@
 #define AA 4
 #define AA2 (AA * AA)
-#define PI 3.14156
 
-//#include "../../InverseMatrix.glsl"
+#include "../../Common/Camera.glsl"
+#include "../../MeshData/TriangularMesh.glsl"
+
 #iChannel0 "../../../Assets/Textures/Checker.jpg"
 #iChannel1 "../../../Assets/Textures/Girl.jpg"
-struct SPoint
-{
-    vec3 Position;
-    vec3 Normal;
-    vec3 Color;
-    vec2 UV;
-};
 
 // Create a geometry data
 #define VECTICES_COUNT 12
@@ -20,77 +14,35 @@ struct SPoint
 SPoint GPoints[VECTICES_COUNT];
 int GIndices[INDICES_COUNT];
 
-void CreateCube()
+void MakeMesh()
 {
-    GPoints[0].Position = vec3(-.5, 0., .5);
-    GPoints[0].Color = vec3(1., 0., 0.);
+    SPoint CubePoints[8];
+    int CubeIndices[36];
 
-    GPoints[1].Position = vec3(.5, 0., .5);
-    GPoints[1].Color = vec3(0., 1., 0.);
+    MakeCubeMesh(CubePoints, CubeIndices, 1., 1., 1.);
+    for(int i = 0; i < 8; ++i)
+    {
+        GPoints[i] = CubePoints[i];
+    }
 
-    GPoints[2].Position = vec3(.5, 1., .5);
-    GPoints[2].Color = vec3(0., 0., 1.);
+    for(int j = 0; j < 36; ++j)
+    {
+        GIndices[j] = CubeIndices[j];
+    }
 
-    GPoints[3].Position = vec3(-.5, 1., .5);
-    GPoints[3].Color = vec3(1., 0., 1.);
+    SPoint PlanePoints[4];
+    int PlaneIndices[6];
 
-    GPoints[4].Position = vec3(-.5, 0., -.5);
-    GPoints[4].Color = vec3(1., 0., 0.);
+    MakePlaneMesh(PlanePoints, PlaneIndices, 3., 3.);
+    for(int i = 0; i < 4; ++i)
+    {
+        GPoints[i + 8] = PlanePoints[i];
+    }
 
-    GPoints[5].Position = vec3(.5, 0., -.5);
-    GPoints[5].Color = vec3(0., 1., 0.);
-
-    GPoints[6].Position = vec3(.5, 1., -.5);
-    GPoints[6].Color = vec3(0., 0., 1.);
-
-    GPoints[7].Position = vec3(-.5, 1., -.5);
-    GPoints[7].Color = vec3(1., 0., 1.);
-
-    // front
-    GIndices[0] = 0; GIndices[1] = 1; GIndices[2] = 2;
-    GIndices[3] = 0; GIndices[4] = 2; GIndices[5] = 3;
-
-    // back
-    GIndices[6] = 4; GIndices[7] = 6; GIndices[8] = 5;
-    GIndices[9] = 4; GIndices[10] = 7; GIndices[11] = 6;
-
-    // top
-    GIndices[12] = 2; GIndices[13] = 6; GIndices[14] = 7;
-    GIndices[15] = 2; GIndices[16] = 7; GIndices[17] = 3;
-
-    // bottom
-    GIndices[18] = 0; GIndices[19] = 4; GIndices[20] = 5;
-    GIndices[21] = 0; GIndices[22] = 5; GIndices[23] = 1;
-
-    // left
-    GIndices[24] = 0; GIndices[25] = 3; GIndices[26] = 7;
-    GIndices[27] = 0; GIndices[28] = 7; GIndices[29] = 4;
-
-    // right
-    GIndices[30] = 1; GIndices[31] = 5; GIndices[32] = 6;
-    GIndices[33] = 1; GIndices[34] = 6; GIndices[35] = 2;
-}
-
-void CreatePlane()
-{
-    GPoints[8].Position = vec3(-2., 0., 2.);
-    GPoints[8].Color = vec3(1., 0., 0.);
-    GPoints[8].UV = vec2(0.);
-
-    GPoints[9].Position = vec3(2., 0., 2.);
-    GPoints[9].Color = vec3(0., 1., 0.);
-    GPoints[9].UV = vec2(1., 0.);
-
-    GPoints[10].Position = vec3(2., 0., -2.);
-    GPoints[10].Color = vec3(0., 0., 1.);
-    GPoints[10].UV = vec2(1.);
-
-    GPoints[11].Position = vec3(-2., 0., -2.);
-    GPoints[11].Color = vec3(1.0, 0.0, 0.9843);
-    GPoints[11].UV = vec2(0., 1.);
-
-    GIndices[36] = 8; GIndices[37] = 9; GIndices[38] = 10;
-    GIndices[39] = 8; GIndices[40] = 10; GIndices[41] = 11;
+    for(int j = 0; j < 6; ++j)
+    {
+        GIndices[j + 36] = PlaneIndices[j] + 8;
+    }
 }
 
 vec2 FixUV(in vec2 fragCrood)
@@ -131,67 +83,6 @@ vec3 Grid(vec2 UV, int Num)
 float Cross2d(vec2 A, vec2 B)
 {
     return A.x * B.y - A.y * B.x;
-}
-
-mat4 IdentityMatrix4()
-{
-    return mat4(1., 0., 0., 0.,
-                0., 1., 0., 0.,
-                0., 0., 1., 0.,
-                0., 0., 0., 1.);
-}
-
-mat4 MakeOrthographic(float Left, float Right, float Top, float Bottom, float Near, float Far)
-{
-    vec3 Scale = vec3(2. / (Right - Left), 2. / (Top - Bottom), 2. / (Near - Far));
-    vec3 Move = vec3(
-        -(Right + Left) / (Right - Left), 
-        -(Top + Bottom) / (Top - Bottom),
-        -(Near + Far) / (Near - Far));
-    
-    return mat4(
-        Scale.x, 0.,      0.,      0.,
-        0.,      Scale.y, 0.,      0.,
-        0.,      0.,      Scale.z, 0.,
-        Move.x,  Move.y,  Move.z,  1.
-    );
-}
-
-// reference https://www.bilibili.com/video/BV1X7411F744?p=4 about 51 minutes
-// https://zhuanlan.zhihu.com/p/144329075
-// https://zhuanlan.zhihu.com/p/144331875
-mat4 MakePerspective(float Fov, float Aspect, float Near, float Far)
-{
-    float Top = Near * tan(Fov * PI / 360.);
-    float Right = Aspect * Top;
-    float Bottom = -Top;
-    float Left = - Right;
-    
-    mat4 MPersp2Ortho = mat4(
-        -Near, 0.,   0.,         0., // game101上面推导是Near,这取-Near是因为 w=z， 而z的一定是负数，后面做透视除法（x/w）后远处值被放大
-        0.,   -Near, 0.,         0.,// game101上面推导是Near,这取-Near是因为 w=z， 而z的一定是负数，后面做透视除法（y/w）后远处值被放大
-        0.,   0.,   Near + Far, 1.,
-        0.,   0.,  -Far * Near, 0.
-    );
-
-    mat4 MOrtho = MakeOrthographic(Left, Right, Top, Bottom, Near, Far);
-
-    return MOrtho * MPersp2Ortho;
-}
-
-vec3 UP = vec3(0., 1., 0.);
-mat4 MakeCameraInverseMatrix(vec3 Eye, vec3 Target)
-{
-    vec3 Z = normalize(Eye - Target),
-        X = normalize(cross(UP, Z)),
-        Y = cross(Z, X);
-    
-    return mat4(
-           X.x,    Y.x,    Z.x, 0.,
-           X.y,    Y.y,    Z.y, 0.,
-           X.z,    Y.z,    Z.z, 0.,
-        -dot(X, Eye), -dot(Y, Eye), -dot(Z, Eye), 1. 
-    );
 }
 
 void VertexFromWorldToNDCSpace(mat4 MVP, in SPoint InPoint, out SPoint OutPoint, out float W)
@@ -239,6 +130,7 @@ vec3 PerspectiveCorrection(vec3 AlphaBetaGamma, float Z1, float Z2, float Z3)
     return Zn * vec3(Alpha, Beta, Gamma);
 }
 
+
 vec4 Render(vec2 P)
 {
     const float Near= -.1, Far = -1000.; 
@@ -251,8 +143,8 @@ vec4 Render(vec2 P)
 
     vec4 Col = vec4(0.);
 
-    CreateCube();
-    CreatePlane();
+    MakeMesh();
+
     float Depth = -99999999.; 
     for(int i = 0; i < INDICES_COUNT; i += 3)
     {
@@ -299,13 +191,13 @@ vec4 Render(vec2 P)
                 + AlphaBetaGamma.y * V2.Color 
                 + AlphaBetaGamma.z * V3.Color;
 
+            
             if(i >= 36)
             {
                 vec2 UV = AlphaBetaGamma.x * V1.UV
                 + AlphaBetaGamma.y * V2.UV
                 + AlphaBetaGamma.z * V3.UV;
-
-                C = texture(iChannel1, UV).xyz;
+                C = texture(iChannel0, UV).xyz;
             }
 
             Col.rgb = C; Col.a = 1.;
