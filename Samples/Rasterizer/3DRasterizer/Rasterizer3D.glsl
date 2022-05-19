@@ -3,7 +3,6 @@
 
 #include "../../Common/Camera.glsl"
 #include "../../MeshData/TriangularMesh.glsl"
-
 #iChannel0 "../../../Assets/Textures/Checker.jpg"
 #iChannel1 "../../../Assets/Textures/Girl.jpg"
 
@@ -19,7 +18,9 @@ void MakeMesh()
     SPoint CubePoints[8];
     int CubeIndices[36];
 
-    MakeCubeMesh(CubePoints, CubeIndices, 1., 1., 1.);
+    mat4 CubeWorldMatrix = IdentityMatrix4();
+
+    MakeCubeMesh(CubePoints, CubeIndices, CubeWorldMatrix);
     for(int i = 0; i < 8; ++i)
     {
         GPoints[i] = CubePoints[i];

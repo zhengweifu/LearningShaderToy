@@ -1,30 +1,29 @@
 #include "../Common/Triangle.glsl"
 
-void MakeCubeMesh(out SPoint[8] Points, out int[36] Indices, float Width, float Height, float Depth)
+void MakeCubeMesh(out SPoint[8] Points, out int[36] Indices, mat4 WorldMatrix)
 {
-    float HWidth = Width * 0.5, HDepth = Depth * 0.5;
-    Points[0].Position = vec3(-HWidth, 0., HDepth);
+    Points[0].Position = (WorldMatrix * vec4(-.5, 0., .5, 1.)).xyz;
     Points[0].Color = vec3(1., 0., 0.);
 
-    Points[1].Position = vec3(HWidth, 0., HDepth);
+    Points[1].Position = (WorldMatrix * vec4(.5, 0., .5, 1.)).xyz;
     Points[1].Color = vec3(0., 1., 0.);
 
-    Points[2].Position = vec3(HWidth, Height, HDepth);
+    Points[2].Position = (WorldMatrix * vec4(.5, 1., .5, 1.)).xyz;
     Points[2].Color = vec3(0., 0., 1.);
 
-    Points[3].Position = vec3(-HWidth, Height, HDepth);
+    Points[3].Position = (WorldMatrix * vec4(-.5, 1., .5, 1.)).xyz;
     Points[3].Color = vec3(1., 0., 1.);
 
-    Points[4].Position = vec3(-HWidth, 0., -HDepth);
+    Points[4].Position = (WorldMatrix * vec4(-.5, 0., -.5, 1.)).xyz;
     Points[4].Color = vec3(1., 0., 0.);
 
-    Points[5].Position = vec3(HWidth, 0., -HDepth);
+    Points[5].Position = (WorldMatrix * vec4(.5, 0., -.5, 1.)).xyz;
     Points[5].Color = vec3(0., 1., 0.);
 
-    Points[6].Position = vec3(HWidth, Height, -HDepth);
+    Points[6].Position = (WorldMatrix * vec4(.5, 1., -.5, 1.)).xyz;
     Points[6].Color = vec3(0., 0., 1.);
 
-    Points[7].Position = vec3(-HWidth, Height, -HDepth);
+    Points[7].Position = (WorldMatrix * vec4(-.5, 1., -.5, 1.)).xyz;
     Points[7].Color = vec3(1., 0., 1.);
 
     // front
