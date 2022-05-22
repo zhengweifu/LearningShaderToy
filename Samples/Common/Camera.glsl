@@ -1,5 +1,12 @@
 #include "./Macro.glsl"
 
+mat3 IdentityMatrix3()
+{
+    return mat3(1., 0., 0.,
+                0., 1., 0.,
+                0., 0., 1.);
+}
+
 mat4 IdentityMatrix4()
 {
     return mat4(1., 0., 0., 0.,
@@ -48,18 +55,13 @@ mat4 MakePerspective(float Fov, float Aspect, float Near, float Far)
 
 vec3 UP = vec3(0., 1., 0.);
 
-mat4 MakeCameraMatrix(vec3 Eye, vec3 Target)
+mat3 MakeCameraMatrix(vec3 Eye, vec3 Target)
 {
     vec3 Z = normalize(Eye - Target),
         X = normalize(cross(UP, Z)),
         Y = cross(Z, X);
     
-    return mat4(
-            vec4(X, 0.),
-            vec4(Y, 0.),
-            vec4(Z, 0.),
-            vec4(Eye, 1.)
-    );
+    return mat3(X, Y, Z);
 }
 
 mat4 MakeCameraInverseMatrix(vec3 Eye, vec3 Target)
