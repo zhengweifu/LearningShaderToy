@@ -4,6 +4,7 @@
 #include "../MeshData/TriangularMesh.glsl"
 
 #define INF 1000000.0
+#define PI 3.141592654
 
 SPoint GPoints[12];
 int GIndices[42];
@@ -63,8 +64,14 @@ void ClosestHit(SRay Ray, inout vec3 Col)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-    vec2 UV = (2. * fragCoord - iResolution.xy) / min(iResolution.x, iResolution.y);
-    vec3 Eye = vec3(3, 1., 3.);
+    vec2 UV =  fragCoord / iResolution.xy * 2. - 1.;
+    vec3 Eye = vec3(1, 3., 3.);
+    float Fov = 53 . * PI / 180.;
+    float Scale = tan(Fov * .5);
+
+    UV.x *= Scale;
+    UV.y *= iResolution.y / iResolution.x  * Scale;
+
     mat3 CameraMatrix = MakeCameraMatrix(Eye, vec3(0.));
     SRay Ray;
     Ray.Origin = Eye;
